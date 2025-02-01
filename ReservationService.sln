@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservationService.SubscriberSuccess", "ReservationService\ReservationService.SubscriberSuccess.csproj", "{609B1F4B-369A-4D90-8F4D-104C6AE0C7FC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservationService.SubscriberSuccess", "ReservationService.SubscriberSuccess\ReservationService.SubscriberSuccess.csproj", "{609B1F4B-369A-4D90-8F4D-104C6AE0C7FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservationService.Publisher", "ReservationService.Services\ReservationService.Publisher.csproj", "{4E8DDD8F-3DF4-4F88-9C3E-3A44DEE4E286}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservationService.Publisher", "ReservationService.Publisher\ReservationService.Publisher.csproj", "{4E8DDD8F-3DF4-4F88-9C3E-3A44DEE4E286}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservationService.SubscriberFailed", "ReservationService.SubscriberFailed\ReservationService.SubscriberFailed.csproj", "{01C6EFEA-7227-4623-9FAB-F76C7E581297}"
 EndProject
