@@ -22,7 +22,7 @@ var producerSuccess = client.NewProducer().Topic(topicSuccess).Create();
 
 var producerFailed = client.NewProducer().Topic(topicFailed).Create();
 
-var message = "{ \"ClientName\": \"John Doe\", \"ClientTelephone\": \"1234567890\", \"NumberOfReservedTable\": 1, \"DateOfReservation\": \"2025-02-14 19:20\" }";
+var message = "{ \"ClientName\": \"Johny Depp\", \"ClientTelephone\": \"1234561111\", \"NumberOfReservedTable\": 1, \"DateOfReservation\": \"2025-02-14 11:20\" }";
 
 var (isValid, errorMessage) = ReservationValidator.ValidateReservation(message);
 
@@ -33,7 +33,7 @@ if (isValid)
 }
 else
 {
-    await producerFailed.Send(Encoding.UTF8.GetBytes($"{{ \"error\": \"{errorMessage}\" }}"));
+    await producerFailed.Send(Encoding.UTF8.GetBytes(message)); //$"{{ \"error\": \"{errorMessage}\" }}"
     Console.WriteLine($"Validation failed: {errorMessage} \nMessage published to pulsar_failed.");
 }
 

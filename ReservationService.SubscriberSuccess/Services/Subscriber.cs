@@ -24,7 +24,7 @@ namespace ReservationService.Subscriber.Services
 
         public async Task StartAsync()
         {
-            Console.WriteLine("Service3 started. Connecting to Pulsar...");
+            Console.WriteLine("Success subscriber service started. Connecting to Pulsar...");
 
             var client = await new PulsarClientBuilder().ServiceUrl(_pulsarServiceUrl).BuildAsync();
 
@@ -41,18 +41,11 @@ namespace ReservationService.Subscriber.Services
                 var message = await consumer.ReceiveAsync();
                 try
                 {
-                    string rawRequest = Encoding.UTF8.GetString(message.Data);
+                    var rawRequest = Encoding.UTF8.GetString(message.Data);
                     Console.WriteLine($"Received message: {rawRequest}");
 
-                    if (!IsValidJson(rawRequest))
-                    {
-                        Console.WriteLine("Invalid JSON format. Message will not be stored.");
-                    }
-                    else
-                    {
-                        // ValidationResult = 9 (Success)
-                        await InsertReservationAsync(rawRequest, 9);
-                    }
+                    // ValidationResult = 9 (Success)
+                    await InsertReservationAsync(rawRequest, 9);
 
                     await consumer.AcknowledgeAsync(message.MessageId);
                 }
@@ -82,19 +75,6 @@ namespace ReservationService.Subscriber.Services
             }
 
             Console.WriteLine("Message stored successfully in SQL.");
-        }
-
-        private bool IsValidJson(string input)
-        {
-            try
-            {
-                JsonDocument.Parse(input);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

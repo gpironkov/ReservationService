@@ -1,10 +1,19 @@
-﻿namespace ReservationService.Services.Validation
+﻿using System.Text.Json.Serialization;
+
+namespace ReservationService.Services.Validation
 {
-    internal class ReservationDto
+    public class ReservationDto
     {
-        internal string ClientName { get; set; }
-        internal string ClientTelephone { get; set; }
-        internal int NumberOfReservedTable { get; set; }
-        internal string DateOfReservation { get; set; }
+        [JsonPropertyName("ClientName")]
+        public string ClientName { get; set; }
+
+        [JsonPropertyName("ClientTelephone")]
+        public string ClientTelephone { get; set; }
+
+        [JsonPropertyName("NumberOfReservedTable")]
+        public int NumberOfReservedTable { get; set; }
+
+        [JsonPropertyName("DateOfReservation")]
+        public string DateOfReservation { get; set; }
     }
 }
