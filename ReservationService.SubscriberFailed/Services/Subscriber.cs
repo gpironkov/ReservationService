@@ -11,6 +11,7 @@ namespace ReservationService.SubscriberFailed.Services
         private readonly MongoDbService _mongoDbService;
         private readonly string _pulsarServiceUrl;
         private const string TopicName = "pulsar_failed";
+        private const string SubscriptionName = "failed-subscription";
 
         public Subscriber(IConfiguration configuration, MongoDbService mongoDbService)
         {
@@ -24,7 +25,7 @@ namespace ReservationService.SubscriberFailed.Services
 
             var consumer = await client.NewConsumer()
                 .Topic(TopicName)
-                .SubscriptionName("failed-subscription")
+                .SubscriptionName(SubscriptionName)
                 .SubscriptionType(SubscriptionType.Exclusive)
                 .SubscribeAsync();
 

@@ -3,10 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Pulsar.Client.Api;
 using Pulsar.Client.Common;
+using ReservationService.SubscriberSuccess.Services;
 using System.Data;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace ReservationService.Subscriber.Services
 {
@@ -15,6 +14,7 @@ namespace ReservationService.Subscriber.Services
         private readonly string? _connectionString;
         private readonly string? _pulsarServiceUrl;
         private const string TopicName = "pulsar_success";
+        private const string SubscriptionName = "reservation-subscription";
 
         public Subscriber(IConfiguration configuration)
         {
@@ -30,7 +30,7 @@ namespace ReservationService.Subscriber.Services
 
             var consumer = await client.NewConsumer()
                 .Topic(TopicName)
-                .SubscriptionName("reservation-subscription")
+                .SubscriptionName(SubscriptionName)
                 .SubscriptionType(SubscriptionType.Exclusive)
                 .SubscribeAsync();
 
@@ -42,12 +42,14 @@ namespace ReservationService.Subscriber.Services
                 try
                 {
                     var rawRequest = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"Received message: {rawRequest}");
+                    Console.WriteLine($"Received message: \n{rawRequest}");
 
                     // ValidationResult = 9 (Success)
                     await InsertReservationAsync(rawRequest, 9);
 
                     await consumer.AcknowledgeAsync(message.MessageId);
+
+                    await SuccessResponse.SendSuccessMessage(client, message);
                 }
                 catch (Exception ex)
                 {
@@ -59,22 +61,33 @@ namespace ReservationService.Subscriber.Services
 
         private async Task InsertReservationAsync(string rawRequest, int validationResult)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-
-                using (var command = new SqlCommand("InsertReservation", connection))
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@RawRequest", rawRequest);
-                    command.Parameters.AddWithValue("@DT", DateTime.UtcNow);
-                    command.Parameters.AddWithValue("@ValidationResult", validationResult);
+                    await connection.OpenAsync();
 
-                    await command.ExecuteNonQueryAsync();
+                    using (var command = new SqlCommand("InsertReservation", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@RawRequest", rawRequest);
+                        command.Parameters.AddWithValue("@DT", DateTime.UtcNow);
+                        command.Parameters.AddWithValue("@ValidationResult", validationResult);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
                 }
-            }
 
-            Console.WriteLine("Message stored successfully in SQL.");
+                Console.WriteLine("\nMessage stored successfully in SQL.\n");
+            }
+            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601) // Unique Constraint Violation
+            {
+                Console.WriteLine("\nThis table is already reserved for the selected date and time. Please choose another time or table.\n");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{ex.Message}");
+            }
         }
     }
 }

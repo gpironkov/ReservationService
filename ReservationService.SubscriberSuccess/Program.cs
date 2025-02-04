@@ -1,21 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ProtoBuf.Meta;
 using ReservationService;
 using ReservationService.Subscriber.Services;
+using ReservationService.SubscriberSuccess.Services;
 
 
 var factory = new DesignTimeDbContextFactory();
 
 using var dbContext = factory.CreateDbContext(args);
 
-if (!dbContext.Database.CanConnect())
+if (!await dbContext.Database.CanConnectAsync())
 {
     await dbContext.Database.MigrateAsync();
     //Console.WriteLine("Database is set up and ready!");
 }
+
+ConstraintApplier.ApplyReservationConstraints(dbContext);
 
 var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>

@@ -1,51 +1,30 @@
-﻿using DotPulsar.Extensions;
-using Microsoft.Extensions.Configuration;
+﻿using ReservationService.Services.Validation;
+using ReservationService.Publisher.Validation;
+using ReservationService.Publisher.Services;
 using System.Text;
-using PulsarClient = DotPulsar.PulsarClient;
-using ReservationService.Services.Validation;
-using DotPulsar.Abstractions;
 
-var configuration = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json")
-    .Build();
 
-string pulsarUrl = configuration["Pulsar:ServiceUrl"];
-string topicSuccess = "pulsar_success";
-string topicFailed = "pulsar_failed";
-
-var client = PulsarClient.Builder().ServiceUrl(new Uri(pulsarUrl)).Build();
-await CreateTopicIfMissing(client, topicSuccess);
-await CreateTopicIfMissing(client, topicFailed);
-
-var producerSuccess = client.NewProducer().Topic(topicSuccess).Create();
-
-var producerFailed = client.NewProducer().Topic(topicFailed).Create();
-
-var message = "{ \"ClientName\": \"Johny Depp\", \"ClientTelephone\": \"1234561111\", \"NumberOfReservedTable\": 1, \"DateOfReservation\": \"2025-02-14 11:20\" }";
-
-var (isValid, errorMessage) = ReservationValidator.ValidateReservation(message);
-
-if (isValid)
+while (true)
 {
-    await producerSuccess.Send(Encoding.UTF8.GetBytes(message));
-    Console.WriteLine("Message published to pulsar_success.");
-}
-else
-{
-    await producerFailed.Send(Encoding.UTF8.GetBytes(message)); //$"{{ \"error\": \"{errorMessage}\" }}"
-    Console.WriteLine($"Validation failed: {errorMessage} \nMessage published to pulsar_failed.");
-}
+    Console.Write("Enter reservation JSON: \n");
+    StringBuilder jsonBuilder = new StringBuilder();
+    string line;
 
-static async Task CreateTopicIfMissing(IPulsarClient client, string topicName)
-{
-    try
+    while ((line = Console.ReadLine()) != null && line.ToUpper() != "END")
     {
-        var producer = client.NewProducer().Topic(topicName).Create();
-        await producer.DisposeAsync();
+        jsonBuilder.AppendLine(line);
     }
-    catch (Exception ex)
+
+    string input = jsonBuilder.ToString().Trim();
+
+    if (string.Equals(input, "exit", StringComparison.OrdinalIgnoreCase))
+        break;
+
+    if (!JsonValidator.IsValidJson<ReservationDto>(input))
     {
-        Console.WriteLine($"Error creating topic {topicName}: {ex.Message}");
+        Console.WriteLine("Invalid JSON format. Please enter a valid reservation JSON.");
+        continue;
     }
+
+    await Task.Run(() => Process.BookReservationAsync(input, args));
 }
