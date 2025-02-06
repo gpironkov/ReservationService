@@ -19,7 +19,7 @@ if (!await dbContext.Database.CanConnectAsync())
     //Console.WriteLine("Database is set up and ready!");
 }
 
-ConstraintApplier.ApplyReservationConstraints(dbContext);
+await ConstraintApplier.ApplyReservationConstraints(dbContext);
 
 var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>

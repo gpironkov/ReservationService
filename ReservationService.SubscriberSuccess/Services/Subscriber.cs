@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using CommonUtilities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Pulsar.Client.Api;
@@ -26,6 +27,8 @@ namespace ReservationService.Subscriber.Services
         {
             Console.WriteLine("Success subscriber service started. Connecting to Pulsar...");
 
+            await PulsarHealthCheck.EnsurePulsarRunningAsync(_pulsarServiceUrl);
+
             var client = await new PulsarClientBuilder().ServiceUrl(_pulsarServiceUrl).BuildAsync();
 
             var consumer = await client.NewConsumer()
@@ -45,11 +48,9 @@ namespace ReservationService.Subscriber.Services
                     Console.WriteLine($"Received message: \n{rawRequest}");
 
                     // ValidationResult = 9 (Success)
-                    await InsertReservationAsync(rawRequest, 9);
+                    await InsertReservationAsync(rawRequest, 9, client, message);
 
-                    await consumer.AcknowledgeAsync(message.MessageId);
-
-                    await SuccessResponse.SendSuccessMessage(client, message);
+                    await consumer.AcknowledgeAsync(message.MessageId);                    
                 }
                 catch (Exception ex)
                 {
@@ -59,7 +60,7 @@ namespace ReservationService.Subscriber.Services
             }
         }
 
-        private async Task InsertReservationAsync(string rawRequest, int validationResult)
+        private async Task InsertReservationAsync(string rawRequest, int validationResult, PulsarClient client, Message<byte[]> message)
         {
             try
             {
@@ -79,6 +80,8 @@ namespace ReservationService.Subscriber.Services
                 }
 
                 Console.WriteLine("\nMessage stored successfully in SQL.\n");
+
+                await SuccessResponse.SendSuccessMessage(client, message);
             }
             catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601) // Unique Constraint Violation
             {

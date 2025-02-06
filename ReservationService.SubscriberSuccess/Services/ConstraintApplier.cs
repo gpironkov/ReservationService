@@ -11,18 +11,19 @@ namespace ReservationService.SubscriberSuccess.Services
 {
     public class ConstraintApplier
     {
-        public static void ApplyReservationConstraints(ReservationDbContext dbContext)
+        public static async Task ApplyReservationConstraints(ReservationDbContext dbContext)
         {
             // Apply constraint to prevent two users from reserving same table for same date and hour
             try
             {
-                using (var connection = new SqlConnection(dbContext.Database.GetConnectionString()))
-                {
-                    connection.Open();
-                    var command = new SqlCommand(File.ReadAllText("Scripts/ReservationConstraint.sql"), connection);
-                    command.ExecuteNonQuery();
-                    Console.WriteLine("Constraints applied!");
-                }
+                await using var connection = new SqlConnection(dbContext.Database.GetConnectionString());
+                await connection.OpenAsync();
+
+                var sqlScript = await File.ReadAllTextAsync("Scripts/ReservationConstraint.sql");
+                await using var command = new SqlCommand(sqlScript, connection);
+                await command.ExecuteNonQueryAsync();
+
+                Console.WriteLine("Constraints applied!");
             }
             catch (Exception ex)
             {

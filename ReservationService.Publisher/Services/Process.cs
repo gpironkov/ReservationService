@@ -5,6 +5,9 @@ using DotPulsar.Extensions;
 using System.Text;
 using PulsarClient = DotPulsar.PulsarClient;
 using DotPulsar.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using CommonUtilities;
 
 namespace ReservationService.Publisher.Services
 {
@@ -18,6 +21,9 @@ namespace ReservationService.Publisher.Services
                 .Build();
 
             var pulsarUrl = configuration["Pulsar:ServiceUrl"];
+            Console.WriteLine("Publisher service started. Connecting to Pulsar...");
+            await PulsarHealthCheck.EnsurePulsarRunningAsync(pulsarUrl);
+
             const string topicSuccess = "pulsar_success";
             const string topicFailed = "pulsar_failed";
             var client = PulsarClient.Builder().ServiceUrl(new Uri(pulsarUrl)).Build();
@@ -34,16 +40,16 @@ namespace ReservationService.Publisher.Services
                 await producerSuccess.Send(Encoding.UTF8.GetBytes(message));
                 Console.WriteLine("\nMessage published to pulsar_success.\n");
                 await CreateDbContext.InitializeAsync(args);
-                // TODO: Task 3 - implement receive message from Success Subscriber and save it in new table 
-                //await ResponseReceiver.ReceiveSuccessResponse(client);
+
+                await ReceiveSuccessMessage(configuration);
             }
             else
             {
-                await producerFailed.Send(Encoding.UTF8.GetBytes(message)); //$"{{ \"error\": \"{errorMessage}\" }}"
+                await producerFailed.Send(Encoding.UTF8.GetBytes(message));
                 Console.WriteLine($"Validation failed: {errorMessage} \nMessage published to pulsar_failed.\n");
             }
         }
-        
+
         static async Task CreateTopicIfMissing(IPulsarClient client, string topicName)
         {
             try
@@ -55,6 +61,18 @@ namespace ReservationService.Publisher.Services
             {
                 Console.WriteLine($"Error creating topic {topicName}: {ex.Message}");
             }
+        }
+
+        static async Task ReceiveSuccessMessage(IConfigurationRoot config)
+        {
+            var serviceProvider = new ServiceCollection()
+                    .AddDbContext<ReservationDbContext>(options => options.UseSqlServer(config.GetConnectionString("DefaultConnection")))
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton<ResponseReceiver>()
+                    .BuildServiceProvider();
+
+            var receiver = serviceProvider.GetRequiredService<ResponseReceiver>();
+            await receiver.SaveReceivedSuccessResponse();
         }
     }
 }

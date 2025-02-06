@@ -1,66 +1,69 @@
-﻿//using DotPulsar;
-//using DotPulsar.Abstractions;
-//using DotPulsar.Extensions;
-//using Microsoft.Data.SqlClient;
-//using Microsoft.EntityFrameworkCore;
-//using Pulsar.Client.Common;
-//using ReservationService.Publisher.DTOs;
-//using ReservationService.Publisher.Models;
-//using System;
-//using System.Collections.Generic;
-//using System.Data;
-//using System.Linq;
-//using System.Text;
-//using System.Text.Json;
-//using System.Threading.Tasks;
-//using SubscriptionType = DotPulsar.SubscriptionType;
+﻿using Microsoft.Extensions.Configuration;
+using Pulsar.Client.Api;
+using Pulsar.Client.Common;
+using ReservationService.Publisher.DTOs;
+using ReservationService.Publisher.Models;
+using System.Text;
+using System.Text.Json;
 
-//namespace ReservationService.Publisher.Services
-//{
-//    public class ResponseReceiver
-//    {
-//        private const string TopicName = "pulsar_success_response";
-//        private const string SubscriptionName = "response-subscription";
+namespace ReservationService.Publisher.Services
+{
+    public class ResponseReceiver
+    {
+        private const string TopicName = "pulsar_success_response";
+        private const string SubscriptionName = "response-subscription";
+        private readonly string _pulsarServiceUrl;
+        private readonly ReservationDbContext _dbContext;
 
-//        public static async Task ReceiveSuccessResponse(IPulsarClient client)
-//        {
-//            var responseConsumer = client.NewConsumer()
-//                .Topic(TopicName)
-//                .SubscriptionName(SubscriptionName)
-//                .SubscriptionType(SubscriptionType.Exclusive)
-//                .Create();
+        public ResponseReceiver(IConfiguration configuration, ReservationDbContext dbContext)
+        {
+            _pulsarServiceUrl = configuration["Pulsar:ServiceUrl"] ?? throw new ArgumentNullException(nameof(configuration));
+            _dbContext = dbContext;
+        }
 
-//            Console.WriteLine("Subscribed to pulsar_success_response");
+        public async Task SaveReceivedSuccessResponse()
+        {
+            var client = await new PulsarClientBuilder().ServiceUrl(_pulsarServiceUrl).BuildAsync();
 
-//            while (true)
-//            {
-//                var responseMessage = await responseConsumer.ReceiveAsync();
-//                try
-//                {
-//                    var responseJson = Encoding.UTF8.GetString(responseMessage.Data);
-//                    //var response = JsonSerializer.Deserialize<ReservationResponseDto>(responseJson);
+            var responseConsumer = await client.NewConsumer()
+                .Topic(TopicName)
+                .SubscriptionName(SubscriptionName)
+                .SubscriptionType(SubscriptionType.Exclusive)
+                .SubscribeAsync();
 
-//                    if (responseJson != null)
-//                    {
-//                        var responseEntity = new ReservationResponse
-//                        {
-//                            RawResponse = responseJson,
-//                            Timestamp = DateTime.UtcNow
-//                        };
+            Console.WriteLine("Subscribed to pulsar_success_response");
 
-//                        _dbContext.Add(responseEntity);
-//                        await _dbContext.SaveChangesAsync();
-//                        Console.WriteLine("Saved response to ReservationResponse table.");
-//                    }
+            while (true)
+            {
+                var responseMessage = await responseConsumer.ReceiveAsync();
+                try
+                {
+                    var responseJson = Encoding.UTF8.GetString(responseMessage.Data);
+                    var response = JsonSerializer.Deserialize<ReservationResponseDto>(responseJson);
 
-//                    await responseConsumer.Acknowledge(responseMessage);
-//                }
-//                catch (Exception ex)
-//                {
-//                    Console.WriteLine($"Error processing response: {ex.Message}");
-//                }
-//            }
-//        }
+                    if (responseJson != null)
+                    {
+                        //var formattedJson = JsonSerializer.Deserialize<JsonElement>(response); // Deserialize to JSON element
 
-//    }
-//}
+                        var responseEntity = new ReservationResponse
+                        {
+                            RawResponse = response.RawRequest, //formattedJson.GetRawText(), // Store as raw JSON
+                            Timestamp = response.Timestamp
+                        };
+
+                        _dbContext.Add(responseEntity);
+                        await _dbContext.SaveChangesAsync();
+                        Console.WriteLine("Saved response to ReservationResponse table.");
+                    }
+
+                    await responseConsumer.AcknowledgeAsync(responseMessage.MessageId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing response: {ex.Message}");
+                }
+            }
+        }
+
+    }
+}

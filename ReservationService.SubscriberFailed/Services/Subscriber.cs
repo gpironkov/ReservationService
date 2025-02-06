@@ -3,6 +3,7 @@ using Pulsar.Client.Api;
 using Pulsar.Client.Common;
 using ReservationService.SubscriberFailed.Data;
 using System.Text;
+using CommonUtilities;
 
 namespace ReservationService.SubscriberFailed.Services
 {
@@ -21,6 +22,10 @@ namespace ReservationService.SubscriberFailed.Services
 
         public async Task StartAsync()
         {
+            Console.WriteLine("Failed subscriber service started. Connecting to Pulsar...");
+
+            await PulsarHealthCheck.EnsurePulsarRunningAsync(_pulsarServiceUrl);
+
             var client = await new PulsarClientBuilder().ServiceUrl(_pulsarServiceUrl).BuildAsync();
 
             var consumer = await client.NewConsumer()
