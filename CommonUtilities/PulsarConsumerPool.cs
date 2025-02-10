@@ -6,8 +6,9 @@ using Pulsar.Client.Common;
 
 namespace CommonUtilities
 {
-    public class PulsarConsumerPool
+    public class PulsarConsumerPool : IAsyncDisposable
     {
+        private bool _disposed = false;
         private readonly PulsarClient _client;
         private readonly ConcurrentDictionary<string, IConsumer<byte[]>> _consumers = new();
         private readonly SemaphoreSlim _lock = new(1, 1);
@@ -37,6 +38,7 @@ namespace CommonUtilities
                     var newConsumer = await _client.NewConsumer()
                         .Topic(topic)
                         .SubscriptionName(subscription)
+                        .SubscriptionType(SubscriptionType.Shared)
                         .SubscribeAsync();
 
                     _consumers[key] = newConsumer;
@@ -54,8 +56,11 @@ namespace CommonUtilities
             }
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             foreach (var consumer in _consumers.Values)
             {
                 await consumer.DisposeAsync();

@@ -81,6 +81,7 @@ namespace ReservationService.Publisher.Services
 
             var receiver = serviceProvider.GetRequiredService<ResponseReceiver>();
             await receiver.WaitForReservationResponseAsync();
+            await serviceProvider.DisposeAsync();
 
             return;
         }
