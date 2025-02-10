@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1" />
-    <PackageReference Include="Pulsar.Client" Version="3.6.2" />
+    <PackageReference Include="Pulsar.Client" Version="3.7.0" />
   </ItemGroup>
 
   <ItemGroup>

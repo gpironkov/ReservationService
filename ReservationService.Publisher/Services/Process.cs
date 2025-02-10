@@ -65,14 +65,24 @@ namespace ReservationService.Publisher.Services
 
         static async Task ReceiveSuccessMessage(IConfigurationRoot config)
         {
+            config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+
+            var pulsarUrl = config["Pulsar:ServiceUrl"];
+
             var serviceProvider = new ServiceCollection()
-                    .AddDbContext<ReservationDbContext>(options => options.UseSqlServer(config.GetConnectionString("DefaultConnection")))
-                    .AddSingleton<IConfiguration>(config)
-                    .AddSingleton<ResponseReceiver>()
-                    .BuildServiceProvider();
+                .AddDbContext<ReservationDbContext>(options => options.UseSqlServer(config.GetConnectionString("DefaultConnection")))
+                .AddSingleton<IConfiguration>(config)
+                .AddSingleton<PulsarConsumerPool>(sp => new PulsarConsumerPool(pulsarUrl))
+                .AddSingleton<ResponseReceiver>()
+                .BuildServiceProvider();
 
             var receiver = serviceProvider.GetRequiredService<ResponseReceiver>();
-            await receiver.SaveReceivedSuccessResponse();
+            await receiver.WaitForReservationResponseAsync();
+
+            return;
         }
     }
 }

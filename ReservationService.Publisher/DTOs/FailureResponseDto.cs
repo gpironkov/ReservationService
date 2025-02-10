@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace ReservationService.Publisher.DTOs
 {
-    public class ReservationResponseDto
+    public class FailureResponseDto
     {
+        [JsonPropertyName("ErrorMessage")]
+        public string ErrorMessage { get; set; }
+
         [JsonPropertyName("RawResponse")]
         public string RawResponse { get; set; }
-
-        [JsonPropertyName("Timestamp")]
-        public DateTime Timestamp { get; } = DateTime.UtcNow;
     }
 }

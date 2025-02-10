@@ -80,12 +80,12 @@ namespace ReservationService.Subscriber.Services
                 }
 
                 Console.WriteLine("\nMessage stored successfully in SQL.\n");
-
-                await SuccessResponse.SendSuccessMessage(client, message);
+                await ResponseMessage.SendSuccessMessage(client, message);
             }
             catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601) // Unique Constraint Violation
             {
                 Console.WriteLine("\nThis table is already reserved for the selected date and time. Please choose another time or table.\n");
+                await ResponseMessage.SendFailedMessage(client, message, "\nThis table is already reserved for the selected date and time.\n");
             }
             catch (Exception ex)
             {

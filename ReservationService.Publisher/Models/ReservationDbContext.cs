@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ReservationService.Publisher.DTOs;
 
 namespace ReservationService.Publisher.Models
 {
@@ -6,11 +7,11 @@ namespace ReservationService.Publisher.Models
     {
         public ReservationDbContext(DbContextOptions options) : base(options) { }
 
-        public DbSet<ReservationResponse> ReservationResponses { get; set; }
+        public DbSet<SuccessResponseDto> ReservationResponses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ReservationResponse>().HasKey(r => r.Id);
+            modelBuilder.Entity<SuccessResponseDto>().HasKey(r => r.Id);
         }
     }
 }

@@ -1,6 +1,6 @@
-﻿namespace ReservationService.Publisher.Models
+﻿namespace ReservationService.Publisher.DTOs
 {
-    public class ReservationResponse
+    public class SuccessResponseDto
     {
         public int Id { get; set; }
         public string RawResponse { get; set; }
